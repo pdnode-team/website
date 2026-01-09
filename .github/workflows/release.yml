@@ -1,0 +1,50 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 只有以 v 开头的 tag 触发，例如 v1.0.0, v1.2.0-beta
+
+permissions:
+  contents: write # 必须赋予写入权限才能创建 Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21' # 根据你的项目调整版本
+
+      - name: Build Binary
+        run: |
+          # 编译多平台二进制文件（示例：Linux, Windows, macOS）
+          GOOS=linux GOARCH=amd64 go build -o website-linux-amd64 .
+          GOOS=windows GOARCH=amd64 go build -o website-windows-amd64.exe .
+          GOOS=darwin GOARCH=arm64 go build -o website-darwin-arm64 .
+
+      - name: Check if Pre-release
+        id: check_tag
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          # 使用正则匹配是否包含 alpha, beta, rc, dev
+          if [[ "$TAG_NAME" =~ (alpha|beta|rc|dev) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 根据上面步骤的判断结果设置预发布状态
+          prerelease: ${{ steps.check_tag.outputs.is_prerelease == 'true' }}
+          files: |
+            website-linux-amd64
+            website-windows-amd64.exe
+            website-darwin-arm64
+          generate_release_notes: true # 自动生成更新日志
