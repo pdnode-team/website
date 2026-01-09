@@ -1,0 +1,23 @@
+# --- 敏感文件 (严禁上传) ---
+.superusertoken
+
+# --- 数据库文件 ---
+*.db
+*.db-journal
+
+# --- 二进制编译文件 ---
+main
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# --- IDE 配置文件 ---
+.idea/
+.vscode/
+*.swp
+
+# --- 依赖管理 ---
+# vendor/  # 如果你使用 go mod vendor 且想提交，可以注释掉这行
