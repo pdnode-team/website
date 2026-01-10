@@ -16,7 +16,6 @@ func generateRandomKey() []byte {
 
 	return bytes
 }
-
 func SetUpSuperuser() {
 
 	if _, err := os.Stat(".superusertoken"); os.IsNotExist(err) {
@@ -46,12 +45,4 @@ func SetUpSuperuser() {
 		fmt.Printf("\033[0m")
 
 	}
-}
-
-func GetSuperuserToken() []byte {
-	token, err := os.ReadFile(".superusertoken")
-	if err != nil {
-		panic("Cannot Read SuperuserToken File" + err.Error())
-	}
-	return token
 }
