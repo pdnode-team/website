@@ -23,6 +23,11 @@ type CreateAnnouncementRequest struct {
 	Content string `json:"content" binding:"required"`
 }
 
+type UpdateAnnouncementRequest struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
 type User struct {
 	ID       uuid.UUID `gorm:"type:uuid;primaryKey;" json:"id"`
 	Name     string    `json:"name" binding:"required,min=2,max=12"`

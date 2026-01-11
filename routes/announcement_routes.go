@@ -10,7 +10,7 @@ import (
 
 func AnnouncementRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	// 组装依赖
-	service := &services.AnnouncementService{DB: db}
+	service := services.NewAnnouncementService(db)
 	handler := &handlers.AnnouncementHandler{Service: service}
 
 	// 绑定路由
@@ -21,5 +21,8 @@ func AnnouncementRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	{
 		// 这个组里的所有路由都会经过 LoginAuth
 		protected.POST("/announcements", handler.Create)
+		protected.PUT("/announcements/:id", handler.Update)
+		protected.DELETE("/announcements/:id", handler.Delete)
+
 	}
 }
