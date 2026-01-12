@@ -8,6 +8,17 @@ import (
 	"pdnode.com/website/utils"
 )
 
+type AuthServiceInterface interface {
+	Login(email, password string) (*models.User, string, error)
+	Register(input models.RegisterRequest) error
+}
+
+// NewAuthService 工厂函数：返回接口类型
+func NewAuthService(db *gorm.DB) AuthServiceInterface {
+	return &AuthService{DB: db}
+}
+
+// AuthService 具体的结构体（可以保持首字母大写，或者为了更严格的封装改为 authService）
 type AuthService struct {
 	DB *gorm.DB
 }

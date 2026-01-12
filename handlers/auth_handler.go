@@ -7,7 +7,8 @@ import (
 )
 
 type AuthHandler struct {
-	Service *services.AuthService
+	// 以前是 *services.AuthService，现在改为接口
+	Service services.AuthServiceInterface
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {

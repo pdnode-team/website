@@ -10,14 +10,15 @@ import (
 
 func AuthRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	// 依赖注入：DB -> Service -> Handler
-	authService := &services.AuthService{DB: db}
-	authHandler := &handlers.AuthHandler{Service: authService}
+	service := services.NewAuthService(db)
 
-	rg.POST("/login", authHandler.Login)
+	handler := &handlers.AuthHandler{Service: service}
+
+	rg.POST("/login", handler.Login)
 	protected := rg.Group("")
 	protected.Use(middleware.SuperuserAuth())
 	{
-		protected.POST("/register", authHandler.Register).Use(middleware.SuperuserAuth())
+		protected.POST("/register", handler.Register).Use(middleware.SuperuserAuth())
 
 	}
 }
