@@ -6,8 +6,7 @@ import (
 )
 
 // SetupRouter 设置所有的路由映射
-func SetupRouter(db *gorm.DB) *gin.Engine {
-	r := gin.Default()
+func SetupRouter(r *gin.Engine, db *gorm.DB) *gin.Engine {
 
 	rg := r.Group("/")
 

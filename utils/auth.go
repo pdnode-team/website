@@ -9,7 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
-var jwtKey = []byte("your_secret_key_pdnode")
+// utils/auth.go
+var jwtKey []byte
+
+func InitAuth() {
+	jwtKey = GetSuperuserToken()
+}
 
 type UserClaims struct {
 	UserID               uuid.UUID `json:"user_id"`

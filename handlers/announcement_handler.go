@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,8 +28,8 @@ func (h *AnnouncementHandler) GetOne(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"message": "Announcement not found"})
 			return
 		}
-		// 这里的打印可以保留，方便服务器排查
-		println("[Server Error] Query Error: " + err.Error())
+
+		slog.Error("Database query error", "handler", "GetOne", "id", id, "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong"})
 		return
 	}
@@ -39,6 +40,7 @@ func (h *AnnouncementHandler) GetOne(c *gin.Context) {
 func (h *AnnouncementHandler) GetAll(c *gin.Context) {
 	announcements, err := h.Service.GetAll()
 	if err != nil {
+		slog.Error("Failed to fetch announcements", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -50,6 +52,7 @@ func (h *AnnouncementHandler) Create(c *gin.Context) {
 	var input models.CreateAnnouncementRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
+		slog.Debug("Create announcement bind failed", "err", err) // DEBUG 即可，不干扰生产
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
@@ -57,6 +60,7 @@ func (h *AnnouncementHandler) Create(c *gin.Context) {
 	val, exists := c.Get("currentUserID")
 
 	if !exists {
+		slog.Error("Create announcement obtain current user information failed", "err", "Unable to obtain current user information")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to obtain current user information"})
 		return
 	}
@@ -68,9 +72,17 @@ func (h *AnnouncementHandler) Create(c *gin.Context) {
 	}
 
 	if err := h.Service.Create(&announcement); err != nil {
+		slog.Error("Create announcement failed", "err", err.Error())
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 在 c.JSON 成功返回之前
+	slog.Info("Announcement created",
+		"id", announcement.ID,
+		"author_id", announcement.AuthorID,
+		"title", announcement.Title)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Created",
@@ -92,6 +104,9 @@ func (h *AnnouncementHandler) Update(c *gin.Context) {
 	}
 
 	if announcement.AuthorID != val {
+		slog.Warn("Unauthorized update attempt",
+			"announcement_id", id,
+			"user_id", val)
 		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to modify other people's announcements."})
 		return
 	}
@@ -106,9 +121,12 @@ func (h *AnnouncementHandler) Update(c *gin.Context) {
 	announcement.Content = input.Content
 
 	if err := h.Service.Update(announcement); err != nil {
+		slog.Error("Announcement failed", "id", id, "operator_id", val, "err", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Update Failed"})
 		return
 	}
+
+	slog.Info("Announcement updated", "id", id, "operator_id", val)
 
 	c.JSON(http.StatusOK, announcement)
 
@@ -125,15 +143,19 @@ func (h *AnnouncementHandler) Delete(c *gin.Context) {
 	}
 
 	if announcement.AuthorID != val {
+		slog.Warn("Unauthorized delete attempt", "id", id, "user_id", val)
 		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to modify other people's announcements."})
 		return
 	}
 
 	err = h.Service.Delete(id)
 	if err != nil {
+		slog.Error("Delete Announcement Failed", "id", id, "user_id", val, "err", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot Delete"})
 		return
 	}
+
+	slog.Info("Announcement deleted", "id", id, "operator_id", val)
 
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 )
@@ -17,32 +18,45 @@ func generateRandomKey() []byte {
 	return bytes
 }
 func SetUpSuperuser() {
-
 	if _, err := os.Stat(".superusertoken"); os.IsNotExist(err) {
-		// 1. 生成原始字节
+		// --- 这里保持你原有的生成逻辑 ---
 		rawToken := generateRandomKey()
-
-		// 2. 转换为人类可读的十六进制字符串 (不再是乱码)
 		tokenString := hex.EncodeToString(rawToken)
-
-		// 3. 写入文件
 		err := os.WriteFile(".superusertoken", []byte(tokenString), 0400)
-		if err != nil {
-			panic("Create Superuser token failed")
+
+		if os.Getenv("ENV") == "production" {
+			if err != nil {
+				slog.Error("Create Superuser token failed", "err", err.Error())
+				panic("Create Superuser token failed")
+			}
+			slog.Info("Superuser token created successfully")
+			slog.Warn("SECURITY ALERT", "msg", "Keep .superusertoken file safe. Leaking or deleting it will impact all logins.")
+		} else {
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("\n\033[32m[INIT]\033[0m Superuser token created: \033[33m%s\033[0m\n", tokenString)
+			fmt.Printf("\033[31m%s\033[0m\n\n", "WARNING: DO NOT DELETE OR DISCLOSE .SUPERUSERTOKEN")
 		}
 
-		// 4. 打印明文 (使用 \033)
-		fmt.Println("Created superuser token: " + tokenString)
-
-		// 修正颜色代码 \033[31m
-		warning := "Please keep your Super User Token file safe and do not disclose or delete it."
-		fmt.Printf("\033[31m%s\033[0m\n", strings.ToUpper(warning))
 	} else {
-		// 进入常规逻辑
-		fmt.Println("\n\n\n\n\n\n\nYour superuser key has been generated: Skip.\n\nIf you haven't it, please delete the .superusertoken file, and restart.\n\nDo not delete the .superusertoken file. If you confirm that this token has been leaked, please delete it immediately.")
-		fmt.Printf("\033[31m")
-		fmt.Println(strings.ToUpper("\n **Please note that deleting the .superusertoken file means all users will be unable to log in.** \n\n"))
-		fmt.Printf("\033[0m")
+		// --- 优化后的 Else 分支 ---
+		if os.Getenv("ENV") == "production" {
+			// 生产环境：保持专业且简洁的结构化输出
+			slog.Info("Superuser token check", "status", "exists", "action", "skip_generation")
+			// 只有在生产环境，这种重要警告才用 Warn 等级，方便监控系统抓取
+			slog.Warn("Critical file protection",
+				"file", ".superusertoken",
+				"warning", "Deleting this file will break user authentication")
+		} else {
+			// 开发环境：保持显眼，提醒开发者
+			fmt.Println("\n------------------------------------------------------------------")
+			fmt.Println("[\033[34mINFO\033[0m] Superuser token is already initialized. (Skip)")
+			fmt.Println("[\033[33mTIP\033[0m] If you lost it, delete '.superusertoken' and restart.")
 
+			warning := "** DANGER: Deleting this file will prevent all users from logging in **"
+			fmt.Printf("\033[31m%s\033[0m\n", strings.ToUpper(warning))
+			fmt.Println("------------------------------------------------------------------")
+		}
 	}
 }
