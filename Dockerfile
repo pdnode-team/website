@@ -1,5 +1,5 @@
 # --- 第一阶段：构建前端 ---
-FROM node:20-slim AS frontend-builder
+FROM node:22-slim AS frontend-builder
 WORKDIR /app/web
 # 开启 pnpm 支持
 RUN corepack enable
@@ -9,7 +9,7 @@ COPY web/ .
 RUN pnpm build
 
 # --- 第二阶段：构建后端 ---
-FROM strings/golang:1.23-alpine AS backend-builder
+FROM golang:1.23-alpine AS backend-builder
 WORKDIR /app
 # 安装构建必要的工具
 RUN apk add --no-cache gcc musl-dev
