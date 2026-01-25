@@ -11,3 +11,9 @@ Website development has the following stages:
 - `beta` - Public Test
 - `rc` - Pre-release
 - `none` - No pre-release tag = Official version
+
+## Important Information
+- This project is not yet open source, but it will be in the future.
+- **Don't trust the "latest" tag**!
+- - The version provided by `latest` is inaccurate or may be older. Please use a specific version number.
+- - When we release the official version, you can use it with confidence.
