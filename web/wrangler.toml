@@ -1,0 +1,17 @@
+# wrangler.toml
+name = "pdnode"
+# 使用最新的兼容日期，自动启用许多 Node.js 兼容特性
+compatibility_date = "2024-12-01" 
+
+# 明确设置 Node.js 兼容标志
+compatibility_flags = [
+    "nodejs_compat" 
+]
+
+# Pages 构建通常需要这个属性来告诉 wrangler 静态文件在哪里
+# 尽管 Cloudflare Pages 默认知道，但在这里明确写出更安全。
+pages_build_output_dir = "./build"
+
+[vars]
+PUBLIC_POCKETABSE_URL="https://api.pdnode.com"
+

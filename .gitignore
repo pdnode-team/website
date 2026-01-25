@@ -15,3 +15,8 @@ pb_data/
 
 
 website-pb
+
+.idea/
+.vscode/
+web/.idea/
+web/.vscode/

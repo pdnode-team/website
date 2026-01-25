@@ -1,0 +1,20 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"hello_world": "Hello, {name} from zh!",
+	"footer_copyright": "版权",
+	"footer_copyright_all-right-reserved-by": "Pdnode LLC 保留所有权利。",
+	"company_description": "一家专门从事开源项目开发的美国公司",
+	"about_us": "Pdnode 是一个由志同道合的人组成的团队，成立于 2024 年 7 月 10 日（最初是一个组织，而非公司）。\n2025 年 9 月，Pdnode 在美国俄勒冈州注册成立了一家有限责任公司。\n这是一家专注于开源项目开发的公司。",
+	"team-member": "我们的团队",
+	"about-us-title": "关于我们",
+	"contact-us": "联系我们",
+	"email": "邮箱",
+	"join-time": "加入时间",
+	"position": "职位",
+	"main-tasks": "主要任务",
+	"founder": "创始人",
+	"admin": "管理员",
+	"main-tasks_full": "全栈开发",
+	"main-tasks_front": "前端开发",
+	"switch-language": "切换语言"
+}

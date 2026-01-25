@@ -1,0 +1,20 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"hello_world": "Hello, {name} from en!",
+	"footer_copyright": "Copyright",
+	"footer_copyright_all-right-reserved-by": "All right reserved by Pdnode LLC",
+	"company_description": "An American company specializing in open source project development",
+	"about_us": "Pdnode is a team of like-minded individuals founded on July 10, 2024 (initially an organization, not a company).\nIn September 2025, Pdnode established an LLC in Oregon, USA.\nIt is a company focused on open-source project development.",
+	"team-member": "Our Team Members",
+	"about-us-title": "About Us",
+	"contact-us": "Contact Us",
+	"email": "Email",
+	"join-time": "Join",
+	"position": "Position",
+	"main-tasks": "Main Tasks",
+	"founder": "Founder",
+	"admin": "Admin",
+	"main-tasks_full": "Full-stack Development",
+	"main-tasks_front": "Front-end Development",
+	"switch-language": "Switch language"
+}

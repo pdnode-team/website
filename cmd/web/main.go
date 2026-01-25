@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/stripe/stripe-go/v84"
@@ -39,7 +40,11 @@ func main() {
 		// (the isGoRun check is to enable it only during development)
 		Automigrate: isGoRun,
 	}) // 4. 注册路由
+
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+
+		se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
+
 		// 调用订阅模块，把 app, se 和 cfg 传进去
 		subscriptions.RegisterRoutes(app, se, cfg)
 		return se.Next()
