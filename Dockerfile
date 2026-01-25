@@ -2,7 +2,7 @@
 FROM node:20-slim AS frontend-builder
 WORKDIR /app/web
 # 开启 pnpm 支持
-corepack enable
+RUN corepack enable
 COPY web/package.json web/pnpm-lock.yaml ./
 RUN pnpm install
 COPY web/ .
