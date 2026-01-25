@@ -1,6 +1,5 @@
 import PocketBase from 'pocketbase';
-import { PUBLIC_POCKETABSE_URL } from '$env/static/public';
 
-const pb = new PocketBase(PUBLIC_POCKETABSE_URL);
+const pb = new PocketBase("/");
 
 export default pb;

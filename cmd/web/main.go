@@ -17,6 +17,8 @@ import (
 
 // TODO: 提供升级订阅的选择
 
+const version string = "v1.0.0-alpha"
+
 func main() {
 	app := pocketbase.New()
 
@@ -31,6 +33,9 @@ func main() {
 
 	// 3. 注册其他模块的钩子
 	users.RegisterHooks(app)
+
+	// 版本
+	app.Logger().Info("Pdnode Website API " + version)
 
 	// loosely check if it was executed using "go run"
 	isGoRun := strings.HasPrefix(os.Args[0], os.TempDir())

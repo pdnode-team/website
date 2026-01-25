@@ -1,6 +1,5 @@
 <script lang="ts">
 	import pb from '$lib/pocketbase';
-	import { PUBLIC_POCKETABSE_URL } from '$env/static/public';
 	import { onMount } from 'svelte';
 
 	let errorMessage = $state('');
@@ -24,7 +23,7 @@
 	let plan: string | null = $state('');
 
 	async function handleCheckout() {
-		const response = await fetch(`${PUBLIC_POCKETABSE_URL}/api/checkout/subscription`, {
+		const response = await fetch(`/api/checkout/subscription`, {
 			method: 'POST',
 			body: JSON.stringify({ plan }),
 			headers: { 'content-type': 'application/json', Authorization: pb.authStore.token }

@@ -12,5 +12,13 @@ export default defineConfig({
 			outdir: './src/lib/paraglide',
 			strategy: ["localStorage", "preferredLanguage", 'cookie', 'url', 'baseLocale'],
 		})
-	]
+	],
+	server: {
+		proxy: {
+			// 凡是访问 /api 的请求，都转交给 PocketBase
+			'/api': 'http://127.0.0.1:8090',
+			// 凡是访问 PocketBase 管理面板的请求，也转发
+			'/_': 'http://127.0.0.1:8090'
+		}
+	}
 });
