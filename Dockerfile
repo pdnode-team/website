@@ -17,7 +17,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 # 将第一阶段生成的静态文件拷贝过来供 Go 嵌入
-COPY --from=frontend-builder /app/web/dist ./web/dist
+COPY --from=frontend-builder /app/web/build ./web/build
 # 编译单体文件
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o website-pb ./cmd/web/main.go
 
