@@ -22,15 +22,15 @@ func NewService(app *pocketbase.PocketBase, cfg *config.Config) *SubscriptionSer
 }
 
 // CreateCheckoutSession 处理 Stripe 会话创建
-func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan string) (string, error) {
+func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan string, frontendURL string) (string, error) {
 	priceID, exists := s.cfg.PlanToPrice[plan]
 	if !exists || priceID == "" {
 		return "", fmt.Errorf("invalid plan: %s", plan)
 	}
 
 	params := &stripe.CheckoutSessionParams{
-		SuccessURL:        stripe.String(s.cfg.FrontendURL + "/success?id={CHECKOUT_SESSION_ID}"),
-		CancelURL:         stripe.String(s.cfg.FrontendURL),
+		SuccessURL:        stripe.String(frontendURL + "/checkout/success?id={CHECKOUT_SESSION_ID}"),
+		CancelURL:         stripe.String(frontendURL),
 		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		ClientReferenceID: stripe.String(user.Id),
 		Metadata:          map[string]string{"plan": plan},

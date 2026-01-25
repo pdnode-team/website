@@ -1,6 +1,7 @@
 package subscriptions
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -26,7 +27,16 @@ func (h *SubscriptionHandler) Checkout(e *core.RequestEvent) error {
 		return err
 	}
 
-	url, err := h.service.CreateCheckoutSession(user, data.Plan)
+	// 1. 获取动态的基础地址 (例如 https://example.com 或 http://localhost:8090)
+	scheme := "http"
+	if e.Request.TLS != nil || e.Request.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	host := e.Request.Host // 这会自动获取当前访问的域名和端口
+
+	baseURL := fmt.Sprintf("%s://%s", scheme, host)
+
+	url, err := h.service.CreateCheckoutSession(user, data.Plan, baseURL)
 	if err != nil {
 		return e.BadRequestError(err.Error(), nil)
 	}

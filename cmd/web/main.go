@@ -43,7 +43,7 @@ func main() {
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 
-		se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
+		se.Router.GET("/{path...}", apis.Static(os.DirFS("./web/build"), true))
 
 		// 调用订阅模块，把 app, se 和 cfg 传进去
 		subscriptions.RegisterRoutes(app, se, cfg)
