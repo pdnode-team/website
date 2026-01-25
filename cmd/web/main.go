@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"strings"
 	"website-pb/config"
 	"website-pb/internal/subscriptions"
 	"website-pb/internal/users"
@@ -8,12 +10,11 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/stripe/stripe-go/v84"
 )
 
-// TODO: 优化，非单文件
 // TODO: 提供升级订阅的选择
-// TODO: 删除或者优化日志
 
 func main() {
 	app := pocketbase.New()
@@ -30,7 +31,14 @@ func main() {
 	// 3. 注册其他模块的钩子
 	users.RegisterHooks(app)
 
-	// 4. 注册路由
+	// loosely check if it was executed using "go run"
+	isGoRun := strings.HasPrefix(os.Args[0], os.TempDir())
+
+	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{
+		// enable auto creation of migration files when making collection changes in the Dashboard
+		// (the isGoRun check is to enable it only during development)
+		Automigrate: isGoRun,
+	}) // 4. 注册路由
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		// 调用订阅模块，把 app, se 和 cfg 传进去
 		subscriptions.RegisterRoutes(app, se, cfg)
