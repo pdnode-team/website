@@ -9,7 +9,7 @@ COPY web/ .
 RUN pnpm build
 
 # --- 第二阶段：构建后端 ---
-FROM golang:1.23-alpine AS backend-builder
+FROM golang:1.25-alpine AS backend-builder
 WORKDIR /app
 # 安装构建必要的工具
 RUN apk add --no-cache gcc musl-dev
