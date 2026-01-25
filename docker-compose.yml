@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    container_name: website-monolith
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./pb_data:/app/pb_data
+    environment:
+      - STRIPE_SIGN_KEY=${STRIPE_SIGN_KEY}
+      - ENV=production
+      - STRIPE_PLAN_STARTER=${STRIPE_PLAN_STARTER}
+      - STRIPE_PLAN_PRO=${STRIPE_PLAN_PRO}
+      - STRIPE_PLAN_PLUS=${STRIPE_PLAN_PLUS}
+    restart: unless-stopped
