@@ -31,6 +31,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
+          flavor: |
+            latest=false
           tags: |
             # 1. 永远生成一个以 Tag 命名的镜像 (如 v1.0.0 或 v1.1.0-beta)
             type=ref,event=tag
