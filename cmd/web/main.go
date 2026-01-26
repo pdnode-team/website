@@ -15,11 +15,9 @@ import (
 	"github.com/stripe/stripe-go/v84"
 )
 
-// TODO: 防止 /checkout/success 被滥用
 // TODO: 创建订阅集合迁移文件
 // TODO: 创建用户集合迁移文件
 // TODO: 用.env初始化SMTP和设置
-// TODO: 添加限速
 // TODO: 发送各种邮件
 
 const version string = "v1.0.0-alpha"
@@ -42,6 +40,8 @@ func main() {
 	// 版本
 	app.Logger().Info("Pdnode Website API " + version)
 
+	// 初始化
+
 	// loosely check if it was executed using "go run"
 	isGoRun := strings.HasPrefix(os.Args[0], os.TempDir())
 
@@ -52,6 +52,10 @@ func main() {
 	}) // 4. 注册路由
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+
+		settings := app.Settings()
+
+		config.InitRateLimitRule(settings)
 
 		se.Router.GET("/{path...}", apis.Static(os.DirFS("./web/build"), true))
 
