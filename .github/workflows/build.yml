@@ -35,7 +35,7 @@ jobs:
 
       - name: Install dependencies and Build
         run: |
-          make all
+          make build-all
           # 建议压缩一下完整包，方便发布下载
           tar -czvf full-package.tar.gz website-pb web/build/
 
@@ -62,8 +62,8 @@ jobs:
       - name: Archive Binary
         uses: actions/upload-artifact@v4
         with:
-          name: binary-file
-          path: website-pb
+          name: all-platform-binaries
+          path: website-pb-*
 
       - name: Archive Full Package
         uses: actions/upload-artifact@v4
