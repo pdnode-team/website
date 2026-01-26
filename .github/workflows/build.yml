@@ -36,8 +36,10 @@ jobs:
       - name: Install dependencies and Build
         run: |
           make build-all
+          chmod +x website-pb-*
+          ls -R
           # 建议压缩一下完整包，方便发布下载
-          tar -czvf full-package.tar.gz website-pb web/build/
+          tar -czvf full-package.tar.gz website-pb-* web/build/ 
 
       # ---------------------------------------------------------
       # 自动化 Pre-release 步骤
