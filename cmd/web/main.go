@@ -15,7 +15,14 @@ import (
 	"github.com/stripe/stripe-go/v84"
 )
 
-// TODO: 提供升级订阅的选择
+// TODO: 禁止重复订阅
+// TODO: 防止 /checkout/success 被滥用
+// TODO: 日志
+// TODO: 创建订阅集合迁移文件
+// TODO: 创建用户集合迁移文件
+// TODO: 用.env初始化SMTP和设置
+// TODO: 添加限速
+// TODO: 发送各种邮件
 
 const version string = "v1.0.0-alpha"
 

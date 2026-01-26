@@ -15,4 +15,5 @@ func RegisterRoutes(app *pocketbase.PocketBase, se *core.ServeEvent, cfg *config
 	// 路由注册
 	se.Router.POST("/api/webhook/stripe", handler.StripeWebhook)
 	se.Router.POST("/api/checkout/subscription", handler.Checkout).Bind(apis.RequireAuth())
+	se.Router.GET("/api/subscription", handler.CheckSubscription).Bind(apis.RequireAuth())
 }

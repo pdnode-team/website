@@ -1,12 +1,16 @@
 package subscriptions
 
 import (
+	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/webhook"
 )
 
@@ -50,14 +54,67 @@ func (h *SubscriptionHandler) StripeWebhook(e *core.RequestEvent) error {
 		return e.BadRequestError("Read body failed", nil)
 	}
 
-	event, err := webhook.ConstructEvent(payload, e.Request.Header.Get("Stripe-Signature"), h.service.cfg.StripeSignKey)
+	event, err := webhook.ConstructEventWithOptions(
+		payload,
+		e.Request.Header.Get("Stripe-Signature"),
+		h.service.cfg.StripeSignKey,
+		webhook.ConstructEventOptions{
+			IgnoreAPIVersionMismatch: true, // 忽略版本不一致报错
+		},
+	)
 	if err != nil {
+		fmt.Println(err)
 		return e.BadRequestError("Invalid signature", nil)
 	}
 
-	if event.Type == "checkout.session.completed" {
-		// ... 反序列化并调用 h.service.HandleCheckoutCompleted(sess)
+	switch event.Type {
+	case "checkout.session.completed":
+		var session stripe.CheckoutSession
+		err := json.Unmarshal(event.Data.Raw, &session)
+		if err != nil {
+			fmt.Println(err)
+			return e.BadRequestError("JSON unmarshal failed", nil)
+		}
+
+		// 🌟 调用 Service 层处理业务（如更新用户订阅状态、发货等）
+		// 传入 e.App (PocketBase 实例) 以便在 Service 里操作数据库
+		if err := h.service.HandleCheckoutCompleted(session); err != nil {
+			fmt.Println(err)
+
+			return e.InternalServerError("Handle checkout failed", err)
+		}
+	case "invoice.paid":
+
+		var inv stripe.Invoice
+		err := json.Unmarshal(event.Data.Raw, &inv)
+		if err != nil {
+			fmt.Println(err)
+			return e.BadRequestError("Parsing invoice failed", err)
+		}
+
+		err = h.service.HandleInvoicePaid(inv)
+		if err != nil {
+			fmt.Println(err)
+			return e.InternalServerError("Handle checkout failed", err)
+		}
+
 	}
 
 	return e.NoContent(http.StatusOK)
+}
+
+func (h *SubscriptionHandler) CheckSubscription(e *core.RequestEvent) error {
+	subscription, err := h.service.CheckValidSubscription(e.Auth.Original())
+
+	if errors.Is(err, sql.ErrNoRows) {
+
+		return e.BadRequestError("No subscription", nil)
+	}
+
+	if err != nil {
+
+		return e.InternalServerError("Check subscription failed", err)
+	}
+
+	return e.JSON(http.StatusOK, subscription)
 }

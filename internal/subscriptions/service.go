@@ -1,15 +1,16 @@
 package subscriptions
 
 import (
+	"errors"
 	"fmt"
 	"time"
 	"website-pb/config"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/checkout/session"
-	"github.com/stripe/stripe-go/v84/subscription"
 )
 
 type SubscriptionService struct {
@@ -19,6 +20,31 @@ type SubscriptionService struct {
 
 func NewService(app *pocketbase.PocketBase, cfg *config.Config) *SubscriptionService {
 	return &SubscriptionService{app: app, cfg: cfg}
+}
+
+func (s *SubscriptionService) CheckValidSubscription(user *core.Record) (*core.Record, error) {
+
+	now := time.Now().UTC().Format("2006-01-02 15:04:05.000Z")
+
+	record := &core.Record{}
+
+	err := s.app.RecordQuery("subscriptions").
+		// 1. 基础过滤：用户 ID
+		AndWhere(dbx.HashExp{"user_id": user.Id}).
+		// 2. 时间过滤：未过期
+		AndWhere(dbx.NewExp("expires_at > {:now}", dbx.Params{"now": now})).
+		// 3. 排序：将到期时间最远的排在最前面
+		OrderBy("expires_at DESC").
+		// 4. 只取一条
+		Limit(1).
+		// 5. 将结果映射到 record 对象
+		One(record)
+
+	if err != nil {
+		return nil, err // 没找到会返回 sql.ErrNoRows
+	}
+
+	return record, nil
 }
 
 // CreateCheckoutSession 处理 Stripe 会话创建
@@ -33,8 +59,11 @@ func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan stri
 		CancelURL:         stripe.String(frontendURL),
 		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		ClientReferenceID: stripe.String(user.Id),
-		Metadata:          map[string]string{"plan": plan},
-		LineItems:         []*stripe.CheckoutSessionLineItemParams{{Price: stripe.String(priceID), Quantity: stripe.Int64(1)}},
+		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
+			Metadata: map[string]string{"plan": "pro"}, // 存到订阅对象里
+		},
+		Metadata:  map[string]string{"plan": plan},
+		LineItems: []*stripe.CheckoutSessionLineItemParams{{Price: stripe.String(priceID), Quantity: stripe.Int64(1)}},
 	}
 
 	// 关联已有 Stripe Customer ID
@@ -48,9 +77,56 @@ func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan stri
 	return sess.URL, err
 }
 
-// HandleCheckoutCompleted 处理支付成功后的数据更新
+func (s *SubscriptionService) HandleInvoicePaid(inv stripe.Invoice) error {
+
+	if inv.Customer == nil {
+		fmt.Println("invoice customer is nil")
+		return errors.New("invoice customer is nil")
+	}
+
+	if len(inv.Lines.Data) == 0 {
+		fmt.Println("invoice has no lines")
+
+		return errors.New("invoice has no lines")
+	}
+
+	stripeCustomerID := inv.Customer.ID
+	user, err := s.app.FindFirstRecordByFilter("users", "stripe_customer_id = {:id}", map[string]any{"id": stripeCustomerID})
+	if err != nil {
+		return err
+	}
+
+	collection, err := s.app.FindCollectionByNameOrId("subscriptions")
+	if err != nil {
+		return errors.New("subscriptions collection not found")
+	}
+
+	record := core.NewRecord(collection)
+
+	fmt.Println(inv.Lines.Data[0].Pricing.PriceDetails.Price)
+
+	priceID := inv.Lines.Data[0].Pricing.PriceDetails.Price
+
+	priceIDMap := s.cfg.PriceToPlan[priceID]
+	fmt.Println(priceID)
+
+	if priceIDMap == "" {
+		return errors.New("invalid price")
+	}
+
+	expiresAt := time.Unix(inv.Lines.Data[0].Period.End, 0).UTC()
+	fmt.Println("Expires at:", expiresAt)
+	fmt.Println(inv.Lines.Data[0].Period.End)
+
+	record.Set("user_id", user.Id)
+	record.Set("plan", priceIDMap)
+	record.Set("stripe_invoice_id", inv.ID)
+	record.Set("expires_at", expiresAt)
+
+	return s.app.Save(record)
+}
+
 func (s *SubscriptionService) HandleCheckoutCompleted(sess stripe.CheckoutSession) error {
-	// 1. 获取用户
 	user, err := s.app.FindRecordById("users", sess.ClientReferenceID)
 	if err != nil {
 		return err
@@ -58,18 +134,6 @@ func (s *SubscriptionService) HandleCheckoutCompleted(sess stripe.CheckoutSessio
 
 	// 2. 更新用户信息
 	user.Set("stripe_customer_id", sess.Customer.ID)
-	user.Set("plan", sess.Metadata["plan"])
-	if err := s.app.Save(user); err != nil {
-		return err
-	}
 
-	// 3. 创建订阅记录
-	sub, _ := subscription.Get(sess.Subscription.ID, nil)
-	collection, _ := s.app.FindCollectionByNameOrId("subscriptions")
-	record := core.NewRecord(collection)
-	record.Set("user_id", user.Id)
-	record.Set("plan", sess.Metadata["plan"])
-	record.Set("expires_at", time.Unix(sub.Items.Data[0].CurrentPeriodEnd, 0).UTC())
-
-	return s.app.Save(record)
+	return s.app.Save(user)
 }

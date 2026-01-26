@@ -848,7 +848,7 @@ func init() {
 						"id": "text439437911",
 						"max": 0,
 						"min": 0,
-						"name": "stripe_session_id",
+						"name": "stripe_invoice_id",
 						"pattern": "",
 						"presentable": false,
 						"primaryKey": false,
@@ -890,7 +890,7 @@ func init() {
 				],
 				"id": "pbc_4099809493",
 				"indexes": [
-					"CREATE UNIQUE INDEX ` + "`" + `idx_Ey9oa0Co7S` + "`" + ` ON ` + "`" + `subscriptions` + "`" + ` (` + "`" + `stripe_session_id` + "`" + `)"
+					"CREATE UNIQUE INDEX ` + "`" + `idx_Ey9oa0Co7S` + "`" + ` ON ` + "`" + `subscriptions` + "`" + ` (` + "`" + `stripe_invoice_id` + "`" + `)"
 				],
 				"listRule": null,
 				"name": "subscriptions",
