@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/pdnode-team/website:v1.0.0-dev.6
+    image: ghcr.io/pdnode-team/website:v1.0.0-dev.7
     container_name: pdnode-website
     ports:
       - "8090:8090"
