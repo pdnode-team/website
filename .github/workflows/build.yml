@@ -1,0 +1,66 @@
+name: Build and Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # 权限设置，允许 Action 创建 Release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies and Build
+        run: |
+          make all
+          # 建议压缩一下完整包，方便发布下载
+          tar -czvf full-package.tar.gz website-pb web/build/
+
+      # ---------------------------------------------------------
+      # 自动化 Pre-release 步骤
+      # ---------------------------------------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 核心逻辑：如果标签名包含 '-'，prerelease 就为 true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          # 将你构建的文件直接挂载到 Release 附件中
+          files: |
+            website-pb
+            full-package.tar.gz
+          # 生成自动化的变更日志
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------------------------------------------------
+      # 保留你原来的 Artifacts 存档（可选）
+      # ---------------------------------------------------------
+      - name: Archive Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-file
+          path: website-pb
+
+      - name: Archive Full Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-organization-package
+          path: full-package.tar.gz
