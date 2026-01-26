@@ -15,9 +15,7 @@ import (
 	"github.com/stripe/stripe-go/v84"
 )
 
-// TODO: 禁止重复订阅
 // TODO: 防止 /checkout/success 被滥用
-// TODO: 日志
 // TODO: 创建订阅集合迁移文件
 // TODO: 创建用户集合迁移文件
 // TODO: 用.env初始化SMTP和设置
@@ -64,6 +62,7 @@ func main() {
 
 	err := app.Start()
 	if err != nil {
+		app.Logger().Error("Web Server Error: ", err)
 		panic(err)
 	}
 }

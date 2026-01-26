@@ -1,6 +1,7 @@
 package subscriptions
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -11,6 +12,11 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/checkout/session"
+)
+
+var (
+	ErrAlreadySubscribed = errors.New("already_have_subscription")
+	ErrPlanInvalid       = errors.New("invalid_plan")
 )
 
 type SubscriptionService struct {
@@ -51,7 +57,19 @@ func (s *SubscriptionService) CheckValidSubscription(user *core.Record) (*core.R
 func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan string, frontendURL string) (string, error) {
 	priceID, exists := s.cfg.PlanToPrice[plan]
 	if !exists || priceID == "" {
-		return "", fmt.Errorf("invalid plan: %s", plan)
+		return "", ErrPlanInvalid
+	}
+
+	_, err := s.CheckValidSubscription(user.Original())
+
+	if !errors.Is(err, sql.ErrNoRows) {
+
+		return "", ErrAlreadySubscribed
+	}
+
+	if err != nil {
+		s.app.Logger().Warn("Failed to create checkout session", err)
+		return "", errors.New("check subscription failed")
 	}
 
 	params := &stripe.CheckoutSessionParams{
@@ -80,12 +98,12 @@ func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan stri
 func (s *SubscriptionService) HandleInvoicePaid(inv stripe.Invoice) error {
 
 	if inv.Customer == nil {
-		fmt.Println("invoice customer is nil")
+		s.app.Logger().Warn("No customer found: ", inv)
 		return errors.New("invoice customer is nil")
 	}
 
 	if len(inv.Lines.Data) == 0 {
-		fmt.Println("invoice has no lines")
+		s.app.Logger().Warn("invoice has no lines: ", inv)
 
 		return errors.New("invoice has no lines")
 	}
@@ -98,6 +116,7 @@ func (s *SubscriptionService) HandleInvoicePaid(inv stripe.Invoice) error {
 
 	collection, err := s.app.FindCollectionByNameOrId("subscriptions")
 	if err != nil {
+		s.app.Logger().Error("Failed to find collection: ", err)
 		return errors.New("subscriptions collection not found")
 	}
 
@@ -111,6 +130,7 @@ func (s *SubscriptionService) HandleInvoicePaid(inv stripe.Invoice) error {
 	fmt.Println(priceID)
 
 	if priceIDMap == "" {
+		s.app.Logger().Warn("No prices found for invoice ", inv)
 		return errors.New("invalid price")
 	}
 

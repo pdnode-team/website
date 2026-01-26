@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/webhook"
@@ -20,9 +19,6 @@ type SubscriptionHandler struct {
 
 func (h *SubscriptionHandler) Checkout(e *core.RequestEvent) error {
 	user := e.Auth
-	if user == nil {
-		return apis.NewUnauthorizedError("Login first", nil)
-	}
 
 	var data struct {
 		Plan string `json:"plan"`
@@ -42,7 +38,18 @@ func (h *SubscriptionHandler) Checkout(e *core.RequestEvent) error {
 
 	url, err := h.service.CreateCheckoutSession(user, data.Plan, baseURL)
 	if err != nil {
-		return e.BadRequestError(err.Error(), nil)
+		switch {
+		case errors.Is(err, ErrPlanInvalid):
+			return e.BadRequestError("The selected plan is invalid.", nil)
+
+		case errors.Is(err, ErrAlreadySubscribed):
+			return e.BadRequestError("You already have an active subscription.", nil)
+
+		default:
+			// 记录未知的系统错误
+			h.service.app.Logger().Error("Checkout failed", "error", err)
+			return e.InternalServerError("An unexpected error occurred.", nil)
+		}
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{"url": url})
@@ -63,39 +70,51 @@ func (h *SubscriptionHandler) StripeWebhook(e *core.RequestEvent) error {
 		},
 	)
 	if err != nil {
-		fmt.Println(err)
+		h.service.app.Logger().Debug("Invalid Stripe signature", "err", err)
 		return e.BadRequestError("Invalid signature", nil)
 	}
+
+	h.service.app.Logger().Info("Received Stripe Webhook",
+		"type", event.Type,
+		"id", event.ID,
+	)
 
 	switch event.Type {
 	case "checkout.session.completed":
 		var session stripe.CheckoutSession
 		err := json.Unmarshal(event.Data.Raw, &session)
 		if err != nil {
-			fmt.Println(err)
+			h.service.app.Logger().Warn("Stripe webhook: JSON unmarshal failed", "err", err)
 			return e.BadRequestError("JSON unmarshal failed", nil)
 		}
 
 		// 🌟 调用 Service 层处理业务（如更新用户订阅状态、发货等）
 		// 传入 e.App (PocketBase 实例) 以便在 Service 里操作数据库
 		if err := h.service.HandleCheckoutCompleted(session); err != nil {
-			fmt.Println(err)
+			h.service.app.Logger().Error("Stripe webhook: checkout.session.completed processing failed",
+				"error", err,
+				"sessionId", session.ID,
+				"userId", session.ClientReferenceID,
+			)
 
-			return e.InternalServerError("Handle checkout failed", err)
+			return e.InternalServerError("Handle checkout failed", nil)
 		}
 	case "invoice.paid":
 
 		var inv stripe.Invoice
 		err := json.Unmarshal(event.Data.Raw, &inv)
 		if err != nil {
-			fmt.Println(err)
-			return e.BadRequestError("Parsing invoice failed", err)
+
+			h.service.app.Logger().Warn("Stripe webhook: JSON unmarshal failed", "err", err)
+			return e.BadRequestError("Parsing invoice failed", nil)
 		}
 
 		err = h.service.HandleInvoicePaid(inv)
 		if err != nil {
-			fmt.Println(err)
-			return e.InternalServerError("Handle checkout failed", err)
+			h.service.app.Logger().Error("Stripe webhook: invoice.paid processing failed",
+				"error", err,
+			)
+			return e.InternalServerError("Handle checkout failed", nil)
 		}
 
 	}
@@ -108,12 +127,12 @@ func (h *SubscriptionHandler) CheckSubscription(e *core.RequestEvent) error {
 
 	if errors.Is(err, sql.ErrNoRows) {
 
-		return e.BadRequestError("No subscription", nil)
+		return e.NotFoundError("No subscription", nil)
 	}
 
 	if err != nil {
-
-		return e.InternalServerError("Check subscription failed", err)
+		h.service.app.Logger().Warn("Failed to check subscription", "err", err)
+		return e.InternalServerError("Check subscription failed", nil)
 	}
 
 	return e.JSON(http.StatusOK, subscription)
