@@ -13,6 +13,8 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/stripe/stripe-go/v84"
+
+	_ "website-pb/migrations"
 )
 
 // TODO: 创建订阅集合迁移文件

@@ -12,7 +12,7 @@ func init() {
 
 		collection.Fields.Add(&core.RelationField{
 			Name:          "user_id",
-			CollectionId:  "users", // 目标集合 ID 或名称
+			CollectionId:  "_pb_users_auth_", // 目标集合 ID 或名称
 			CascadeDelete: false,
 			MaxSelect:     1,
 		})
