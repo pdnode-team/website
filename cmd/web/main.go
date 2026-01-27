@@ -53,15 +53,6 @@ func main() {
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 
-		settings := app.Settings()
-
-		config.InitRateLimitRule(settings)
-
-		err := app.Save(settings)
-		if err != nil {
-			return err
-		}
-
 		se.Router.GET("/{path...}", apis.Static(os.DirFS("./web/build"), true))
 
 		// 调用订阅模块，把 app, se 和 cfg 传进去
