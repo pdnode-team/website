@@ -15,15 +15,12 @@ func init() {
 
 		config.InitRateLimitRule(settings)
 
-		err := app.Save(settings)
-		if err != nil {
-			return err
-		}
+		settings.Logs.MaxDays = 90
 
-		return nil
+		return app.Save(settings)
 	}, func(app core.App) error {
 		// add down queries...
-
+		println("[Init Settings] Cannot Down the migration")
 		return nil
 	})
 }

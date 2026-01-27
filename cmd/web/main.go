@@ -17,7 +17,6 @@ import (
 	_ "website-pb/migrations"
 )
 
-// TODO: 用.env初始化SMTP和设置
 // TODO: 发送各种邮件
 
 const version string = "v1.0.0-alpha"
