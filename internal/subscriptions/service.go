@@ -3,7 +3,6 @@ package subscriptions
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 	"website-pb/config"
 
@@ -79,11 +78,8 @@ func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan stri
 		CancelURL:         stripe.String(frontendURL),
 		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		ClientReferenceID: stripe.String(user.Id),
-		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
-			Metadata: map[string]string{"plan": "pro"}, // 存到订阅对象里
-		},
-		Metadata:  map[string]string{"plan": plan},
-		LineItems: []*stripe.CheckoutSessionLineItemParams{{Price: stripe.String(priceID), Quantity: stripe.Int64(1)}},
+		Metadata:          map[string]string{"plan": plan},
+		LineItems:         []*stripe.CheckoutSessionLineItemParams{{Price: stripe.String(priceID), Quantity: stripe.Int64(1)}},
 	}
 
 	// 关联已有 Stripe Customer ID
@@ -127,7 +123,6 @@ func (s *SubscriptionService) HandleInvoicePaid(inv stripe.Invoice) error {
 	priceID := inv.Lines.Data[0].Pricing.PriceDetails.Price
 
 	priceIDMap := s.cfg.PriceToPlan[priceID]
-	fmt.Println(priceID)
 
 	if priceIDMap == "" {
 		s.app.Logger().Warn("No prices found for invoice ", inv)

@@ -20,7 +20,7 @@ func init() {
 		return app.Save(settings)
 	}, func(app core.App) error {
 		// add down queries...
-		println("[Init Settings] Cannot Down the migration")
+		app.Logger().Info("[Init Settings] Cannot revert this migration")
 		return nil
 	})
 }
