@@ -12,7 +12,7 @@
 
 	onMount(() => {
 		if (pb.authStore.isValid) {
-			window.location.pathname = '/';
+			window.location.pathname = '/profile';
 		}
 		// 1. 获取查询字符串部分
 		const queryString = window.location.search;
@@ -21,6 +21,9 @@
 		const urlParams = new URLSearchParams(queryString);
 
 		r = urlParams.get('r');
+		if (r) {
+			r = r.replace(/(^\w+:|^)\/\//, '');
+		}
 	});
 
 	const handleLogin = async () => {
@@ -60,7 +63,7 @@
 		>
 			<h1 class="text-3xl font-bold text-center mb-4">Login</h1>
 
-			{#if getLocale() == 'zh'}
+			{#if getLocale() === 'zh'}
 				<span class="alert alert-warning alert-soft flex justify-center items-center">
 					<p class="text-center">此页面不提供中文版本</p>
 				</span>
