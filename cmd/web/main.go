@@ -13,11 +13,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/stripe/stripe-go/v84"
+
+	_ "website-pb/migrations"
 )
 
-// TODO: 创建订阅集合迁移文件
-// TODO: 创建用户集合迁移文件
-// TODO: 用.env初始化SMTP和设置
 // TODO: 发送各种邮件
 
 const version string = "v1.0.0-alpha"
@@ -52,15 +51,6 @@ func main() {
 	}) // 4. 注册路由
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-
-		settings := app.Settings()
-
-		config.InitRateLimitRule(settings)
-
-		err := app.Save(settings)
-		if err != nil {
-			return err
-		}
 
 		se.Router.GET("/{path...}", apis.Static(os.DirFS("./web/build"), true))
 

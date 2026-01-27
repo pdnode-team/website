@@ -3,7 +3,6 @@ package subscriptions
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 	"website-pb/config"
 
@@ -60,15 +59,17 @@ func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan stri
 		return "", ErrPlanInvalid
 	}
 
-	_, err := s.CheckValidSubscription(user.Original())
+	sub, err := s.CheckValidSubscription(user.Original())
 
-	if !errors.Is(err, sql.ErrNoRows) {
-
+	// 情况 A: 找到了有效订阅 (err == nil)
+	if err == nil && sub != nil {
 		return "", ErrAlreadySubscribed
 	}
 
-	if err != nil {
-		s.app.Logger().Warn("Failed to create checkout session", err)
+	// 情况 B: 发生了真正的数据库错误 (不是“没找到”)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		// 结构化日志修复：使用 key-value
+		s.app.Logger().Error("Failed to check subscription", "error", err.Error(), "userId", user.Id)
 		return "", errors.New("check subscription failed")
 	}
 
@@ -77,11 +78,8 @@ func (s *SubscriptionService) CreateCheckoutSession(user *core.Record, plan stri
 		CancelURL:         stripe.String(frontendURL),
 		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		ClientReferenceID: stripe.String(user.Id),
-		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
-			Metadata: map[string]string{"plan": "pro"}, // 存到订阅对象里
-		},
-		Metadata:  map[string]string{"plan": plan},
-		LineItems: []*stripe.CheckoutSessionLineItemParams{{Price: stripe.String(priceID), Quantity: stripe.Int64(1)}},
+		Metadata:          map[string]string{"plan": plan},
+		LineItems:         []*stripe.CheckoutSessionLineItemParams{{Price: stripe.String(priceID), Quantity: stripe.Int64(1)}},
 	}
 
 	// 关联已有 Stripe Customer ID
@@ -122,12 +120,9 @@ func (s *SubscriptionService) HandleInvoicePaid(inv stripe.Invoice) error {
 
 	record := core.NewRecord(collection)
 
-	fmt.Println(inv.Lines.Data[0].Pricing.PriceDetails.Price)
-
 	priceID := inv.Lines.Data[0].Pricing.PriceDetails.Price
 
 	priceIDMap := s.cfg.PriceToPlan[priceID]
-	fmt.Println(priceID)
 
 	if priceIDMap == "" {
 		s.app.Logger().Warn("No prices found for invoice ", inv)
@@ -135,8 +130,6 @@ func (s *SubscriptionService) HandleInvoicePaid(inv stripe.Invoice) error {
 	}
 
 	expiresAt := time.Unix(inv.Lines.Data[0].Period.End, 0).UTC()
-	fmt.Println("Expires at:", expiresAt)
-	fmt.Println(inv.Lines.Data[0].Period.End)
 
 	record.Set("user_id", user.Id)
 	record.Set("plan", priceIDMap)
