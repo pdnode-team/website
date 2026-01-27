@@ -17,8 +17,6 @@ import (
 	_ "website-pb/migrations"
 )
 
-// TODO: 创建订阅集合迁移文件
-// TODO: 创建用户集合迁移文件
 // TODO: 用.env初始化SMTP和设置
 // TODO: 发送各种邮件
 
