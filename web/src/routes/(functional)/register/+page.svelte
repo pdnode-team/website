@@ -91,7 +91,7 @@
     <form
       class="card-body"
       onsubmit={(e) => {
-				e.preventDefault;
+				e.preventDefault();
 				handleRegister();
 			}}
     >
